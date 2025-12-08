@@ -1,0 +1,273 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// NextAuth Models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// User Model
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  emailVerified   DateTime?
+  name            String?
+  image           String?
+  hashedPassword  String?
+
+  // Game-related fields
+  subscription    SubscriptionTier @default(FREE)
+  subscriptionEnd DateTime?
+  stripeCustomerId String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  gameSaves       GameSave[]
+  achievements    UserAchievement[]
+  analytics       UserAnalytics[]
+  payments        Payment[]
+  leaderboardEntries LeaderboardEntry[]
+}
+
+// Subscription Tiers
+enum SubscriptionTier {
+  FREE
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+// Game Save Model
+model GameSave {
+  id              String   @id @default(cuid())
+  userId          String
+  slotNumber      Int      @default(1)
+
+  // Player State
+  playerName      String
+  playerLevel     Int      @default(1)
+  playerExperience Int     @default(0)
+  playerMoney     BigInt   @default(5000000)
+  playerReputation Int     @default(50)
+  completedProjects Int    @default(0)
+  totalEarnings   BigInt   @default(0)
+  unlockedChannels String[] @default(["seo", "sns", "ads", "content"])
+
+  // Current Game State
+  gameState       String   @default("clientSelect")
+  currentDay      Int      @default(1)
+  currentClientId String?
+  currentStrategy Json?
+  executionProgress Int    @default(0)
+  executionResults Json?
+
+  // Team Members (JSON for flexibility)
+  teamMembers     Json?
+
+  // Metadata
+  version         String   @default("1.0.0")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, slotNumber])
+  @@index([userId])
+}
+
+// User Achievements
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  // Reward claimed
+  rewardClaimed Boolean  @default(false)
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
+
+// Leaderboard
+model LeaderboardEntry {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+
+  // Stats
+  highestLevel    Int      @default(1)
+  totalProjects   Int      @default(0)
+  totalEarnings   BigInt   @default(0)
+  highestReputation Int    @default(50)
+  longestStreak   Int      @default(0)
+
+  // Ranking
+  weeklyRank      Int?
+  monthlyRank     Int?
+  allTimeRank     Int?
+
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Payment History
+model Payment {
+  id              String        @id @default(cuid())
+  userId          String
+
+  // Stripe Info
+  stripePaymentId String        @unique
+  stripeInvoiceId String?
+
+  // Payment Details
+  amount          Int           // in cents/won
+  currency        String        @default("KRW")
+  status          PaymentStatus @default(PENDING)
+
+  // Subscription Info
+  subscriptionTier SubscriptionTier?
+  billingPeriod   BillingPeriod?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([stripePaymentId])
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+  CANCELED
+}
+
+enum BillingPeriod {
+  MONTHLY
+  YEARLY
+}
+
+// User Analytics
+model UserAnalytics {
+  id              String   @id @default(cuid())
+  userId          String
+
+  // Event Info
+  eventType       String
+  eventData       Json?
+
+  // Context
+  sessionId       String?
+  deviceType      String?
+  platform        String?  // web, ios, android
+  appVersion      String?
+
+  // Timestamps
+  timestamp       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([eventType])
+  @@index([timestamp])
+}
+
+// Game Analytics (Anonymous)
+model GameAnalytics {
+  id              String   @id @default(cuid())
+
+  // Event Info
+  eventType       String
+  eventData       Json?
+
+  // Context
+  sessionId       String
+  deviceType      String?
+  platform        String?
+
+  // Game Context
+  gameState       String?
+  playerLevel     Int?
+  clientId        String?
+
+  timestamp       DateTime @default(now())
+
+  @@index([eventType])
+  @@index([sessionId])
+  @@index([timestamp])
+}
+
+// Daily Active Users Aggregation
+model DailyStats {
+  id              String   @id @default(cuid())
+  date            DateTime @db.Date @unique
+
+  // User Stats
+  activeUsers     Int      @default(0)
+  newUsers        Int      @default(0)
+
+  // Game Stats
+  gamesStarted    Int      @default(0)
+  gamesCompleted  Int      @default(0)
+  projectsStarted Int      @default(0)
+  projectsCompleted Int    @default(0)
+
+  // Revenue Stats
+  revenue         BigInt   @default(0)
+  newSubscribers  Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

@@ -1,40 +1,135 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GameSave } from '@adventure/shared';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import prisma from '@/lib/prisma';
+import { GameValidator } from '@/lib/game-validator';
+import { GAME_CONFIG } from '@adventure/shared';
 
-// In production, this would save to a database
-const gameSaves = new Map<string, GameSave[]>();
-
+// Save game state
 export async function POST(request: NextRequest) {
   try {
-    const { userId, save } = await request.json();
+    const session = await getServerSession(authOptions);
 
-    if (!userId || !save) {
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { slotNumber = 1, playerState, gameState, currentData } = body;
+
+    // Validate player state
+    const validation = GameValidator.validatePlayerState(playerState);
+    if (!validation.valid) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: validation.error },
         { status: 400 }
       );
     }
 
-    // Get existing saves for user
-    const userSaves = gameSaves.get(userId) || [];
-
     // Check save slot limits based on subscription
-    // This would be checked against the user's subscription in production
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { subscription: true },
+    });
 
-    // Add new save
-    userSaves.push(save);
-
-    // Keep only the last 10 saves
-    if (userSaves.length > 10) {
-      userSaves.shift();
+    const maxSlots = GAME_CONFIG.SAVE_SLOTS[user?.subscription || 'FREE'];
+    if (maxSlots !== -1 && slotNumber > maxSlots) {
+      return NextResponse.json(
+        { error: `Upgrade to save to slot ${slotNumber}` },
+        { status: 403 }
+      );
     }
 
-    gameSaves.set(userId, userSaves);
+    // Upsert game save
+    const save = await prisma.gameSave.upsert({
+      where: {
+        userId_slotNumber: {
+          userId: session.user.id,
+          slotNumber,
+        },
+      },
+      update: {
+        playerName: playerState.name,
+        playerLevel: playerState.level,
+        playerExperience: playerState.experience,
+        playerMoney: BigInt(playerState.money),
+        playerReputation: playerState.reputation,
+        completedProjects: playerState.completedProjects,
+        totalEarnings: BigInt(playerState.totalEarnings || 0),
+        unlockedChannels: playerState.unlockedChannels || ['seo', 'sns', 'ads', 'content'],
+        gameState: gameState,
+        currentDay: currentData?.currentDay || 1,
+        currentClientId: currentData?.clientId,
+        currentStrategy: currentData?.strategy,
+        executionProgress: currentData?.executionProgress || 0,
+        executionResults: currentData?.executionResults,
+        teamMembers: playerState.teamMembers,
+        updatedAt: new Date(),
+      },
+      create: {
+        userId: session.user.id,
+        slotNumber,
+        playerName: playerState.name,
+        playerLevel: playerState.level,
+        playerExperience: playerState.experience,
+        playerMoney: BigInt(playerState.money),
+        playerReputation: playerState.reputation,
+        completedProjects: playerState.completedProjects,
+        totalEarnings: BigInt(playerState.totalEarnings || 0),
+        unlockedChannels: playerState.unlockedChannels || ['seo', 'sns', 'ads', 'content'],
+        gameState: gameState,
+        currentDay: currentData?.currentDay || 1,
+        currentClientId: currentData?.clientId,
+        currentStrategy: currentData?.strategy,
+        executionProgress: currentData?.executionProgress || 0,
+        executionResults: currentData?.executionResults,
+        teamMembers: playerState.teamMembers,
+      },
+    });
+
+    // Update leaderboard
+    await prisma.leaderboardEntry.upsert({
+      where: { userId: session.user.id },
+      update: {
+        highestLevel: {
+          set: playerState.level,
+        },
+        totalProjects: playerState.completedProjects,
+        totalEarnings: BigInt(playerState.totalEarnings || 0),
+        highestReputation: Math.max(
+          playerState.reputation,
+          (await prisma.leaderboardEntry.findUnique({
+            where: { userId: session.user.id },
+            select: { highestReputation: true },
+          }))?.highestReputation || 0
+        ),
+      },
+      create: {
+        userId: session.user.id,
+        highestLevel: playerState.level,
+        totalProjects: playerState.completedProjects,
+        totalEarnings: BigInt(playerState.totalEarnings || 0),
+        highestReputation: playerState.reputation,
+      },
+    });
+
+    // Log analytics
+    await prisma.userAnalytics.create({
+      data: {
+        userId: session.user.id,
+        eventType: 'game_saved',
+        eventData: {
+          slotNumber,
+          level: playerState.level,
+          completedProjects: playerState.completedProjects,
+        },
+      },
+    });
 
     return NextResponse.json({
       success: true,
       saveId: save.id,
-      savedAt: new Date().toISOString(),
+      savedAt: save.updatedAt.toISOString(),
     });
   } catch (error) {
     console.error('Save error:', error);
@@ -45,34 +140,73 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Get user's saves
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const session = await getServerSession(authOptions);
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID required' },
-        { status: 400 }
-      );
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userSaves = gameSaves.get(userId) || [];
+    const saves = await prisma.gameSave.findMany({
+      where: { userId: session.user.id },
+      orderBy: { slotNumber: 'asc' },
+      select: {
+        id: true,
+        slotNumber: true,
+        playerName: true,
+        playerLevel: true,
+        playerMoney: true,
+        playerReputation: true,
+        completedProjects: true,
+        gameState: true,
+        currentDay: true,
+        updatedAt: true,
+      },
+    });
 
     return NextResponse.json({
-      saves: userSaves.map((save) => ({
-        id: save.id,
-        playerName: save.player.name,
-        level: save.player.level,
-        money: save.player.money,
-        completedProjects: save.player.completedProjects,
-        savedAt: save.savedAt,
+      saves: saves.map((save) => ({
+        ...save,
+        playerMoney: save.playerMoney.toString(),
       })),
     });
   } catch (error) {
     console.error('Load saves error:', error);
     return NextResponse.json(
       { error: 'Failed to load saves' },
+      { status: 500 }
+    );
+  }
+}
+
+// Delete a save
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const slotNumber = parseInt(searchParams.get('slot') || '1');
+
+    await prisma.gameSave.delete({
+      where: {
+        userId_slotNumber: {
+          userId: session.user.id,
+          slotNumber,
+        },
+      },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Delete save error:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete save' },
       { status: 500 }
     );
   }

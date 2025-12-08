@@ -1,9 +1,13 @@
 import type { Metadata, Viewport } from 'next';
+import { Suspense } from 'react';
 import '@/styles/globals.css';
+import SessionProvider from '@/components/providers/SessionProvider';
+import AnalyticsProvider from '@/components/providers/AnalyticsProvider';
 
 export const metadata: Metadata = {
   title: '마케터 생존기 | Marketing Simulator',
-  description: '실제 마케팅을 배우는 시뮬레이션 게임. 클라이언트를 수주하고, 전략을 세우고, 성과를 만들어내세요!',
+  description:
+    '실제 마케팅을 배우는 시뮬레이션 게임. 클라이언트를 수주하고, 전략을 세우고, 성과를 만들어내세요!',
   keywords: ['마케팅', '시뮬레이션', '게임', '교육', '디지털마케팅', '광고'],
   authors: [{ name: 'AdVenture Team' }],
   openGraph: {
@@ -39,8 +43,14 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className="antialiased">
-        <div id="app-root">{children}</div>
-        <div id="modal-root" />
+        <SessionProvider>
+          <Suspense fallback={null}>
+            <AnalyticsProvider>
+              <div id="app-root">{children}</div>
+              <div id="modal-root" />
+            </AnalyticsProvider>
+          </Suspense>
+        </SessionProvider>
       </body>
     </html>
   );
