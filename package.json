@@ -1,0 +1,33 @@
+{
+  "name": "adventure-marketer-simulator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "마케터 생존기 - Marketing Simulator Game",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=packages/web",
+    "dev:mobile": "npm run start --workspace=packages/mobile",
+    "dev:api": "npm run dev --workspace=packages/api",
+    "build:web": "npm run build --workspace=packages/web",
+    "build:mobile": "npm run build --workspace=packages/mobile",
+    "build:api": "npm run build --workspace=packages/api",
+    "build:shared": "npm run build --workspace=packages/shared",
+    "build:all": "npm run build:shared && npm run build:web && npm run build:api",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "keywords": [
+    "marketing",
+    "simulator",
+    "game",
+    "education"
+  ],
+  "author": "AdVenture Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
