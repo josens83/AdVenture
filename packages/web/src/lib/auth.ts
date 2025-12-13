@@ -4,7 +4,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import GitHubProvider from 'next-auth/providers/github';
 import bcrypt from 'bcryptjs';
-import prisma from './prisma';
+import { prisma } from './prisma';
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
@@ -36,7 +36,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: { email: credentials.email.toLowerCase() },
         });
 
         if (!user || !user.hashedPassword) {
@@ -50,6 +50,11 @@ export const authOptions: NextAuthOptions = {
 
         if (!isPasswordValid) {
           throw new Error('비밀번호가 일치하지 않습니다.');
+        }
+
+        // Check email verification
+        if (!user.emailVerified) {
+          throw new Error('EmailNotVerified');
         }
 
         return {
@@ -70,7 +75,7 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/auth/signin',
     signUp: '/auth/signup',
-    error: '/auth/error',
+    error: '/auth/signin',
   },
 
   callbacks: {
@@ -84,12 +89,14 @@ export const authOptions: NextAuthOptions = {
           select: {
             subscription: true,
             subscriptionEnd: true,
+            emailVerified: true,
           },
         });
 
         if (dbUser) {
           token.subscription = dbUser.subscription;
           token.subscriptionEnd = dbUser.subscriptionEnd;
+          token.emailVerified = dbUser.emailVerified;
         }
       }
 
@@ -107,17 +114,31 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.subscription = token.subscription as string;
         session.user.subscriptionEnd = token.subscriptionEnd as Date | null;
+        session.user.emailVerified = token.emailVerified as Date | null;
       }
       return session;
     },
 
     async signIn({ user, account }) {
-      // Allow OAuth sign in
+      // Allow OAuth sign in - auto verify their email
       if (account?.provider !== 'credentials') {
+        // Auto-verify email for OAuth users
+        if (user.id && user.email) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+          });
+
+          if (dbUser && !dbUser.emailVerified) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { emailVerified: new Date() },
+            });
+          }
+        }
         return true;
       }
 
-      // For credentials, check if user exists
+      // For credentials, check if user exists and is verified
       if (!user.email) {
         return false;
       }
@@ -130,20 +151,28 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
 
+      // Email verification check is done in authorize
       return true;
     },
   },
 
   events: {
     async createUser({ user }) {
-      // Initialize user data when account is created
+      // Initialize user data when account is created via OAuth
       if (user.id) {
-        // Create initial leaderboard entry
-        await prisma.leaderboardEntry.create({
-          data: {
-            userId: user.id,
-          },
+        // Check if leaderboard entry already exists
+        const existingEntry = await prisma.leaderboardEntry.findUnique({
+          where: { userId: user.id },
         });
+
+        if (!existingEntry) {
+          // Create initial leaderboard entry
+          await prisma.leaderboardEntry.create({
+            data: {
+              userId: user.id,
+            },
+          });
+        }
 
         // Log analytics event
         await prisma.userAnalytics.create({

@@ -6,9 +6,10 @@ import { formatMoney } from '@adventure/shared';
 
 interface IntroScreenProps {
   onStart: (name: string) => void;
+  onLoadGame?: () => void;
 }
 
-export default function IntroScreen({ onStart }: IntroScreenProps) {
+export default function IntroScreen({ onStart, onLoadGame }: IntroScreenProps) {
   const [playerName, setPlayerName] = useState('');
 
   const handleStart = () => {
@@ -80,15 +81,27 @@ export default function IntroScreen({ onStart }: IntroScreenProps) {
           maxLength={20}
         />
 
-        {/* Start Button */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleStart}
-          className="btn-primary w-full text-lg"
-        >
-          게임 시작 →
-        </motion.button>
+        {/* Buttons */}
+        <div className="space-y-3">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleStart}
+            className="btn-primary w-full text-lg"
+          >
+            새 게임 시작 →
+          </motion.button>
+          {onLoadGame && (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onLoadGame}
+              className="btn-secondary w-full text-lg"
+            >
+              저장된 게임 불러오기
+            </motion.button>
+          )}
+        </div>
 
         {/* Features */}
         <div className="mt-12 grid grid-cols-2 gap-4 text-left">

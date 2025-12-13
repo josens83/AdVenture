@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -15,6 +15,24 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+
+  // Password strength indicators
+  const [passwordStrength, setPasswordStrength] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+  });
+
+  useEffect(() => {
+    setPasswordStrength({
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /\d/.test(password),
+    });
+  }, [password]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,8 +46,9 @@ export default function SignUpPage() {
       return;
     }
 
-    if (password.length < 8) {
-      setErrorMessage('비밀번호는 8자 이상이어야 합니다.');
+    const allValid = Object.values(passwordStrength).every(Boolean);
+    if (!allValid) {
+      setErrorMessage('비밀번호 요구사항을 모두 충족해주세요.');
       setIsLoading(false);
       return;
     }
@@ -49,19 +68,9 @@ export default function SignUpPage() {
         return;
       }
 
-      // Auto sign in after registration
-      const signInResult = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (signInResult?.error) {
-        // Registration succeeded but sign in failed
-        router.push('/auth/signin?registered=true');
-      } else {
-        router.push('/');
-        router.refresh();
+      // Show verification message instead of auto-login
+      if (data.requiresVerification) {
+        setShowVerificationMessage(true);
       }
     } catch (error) {
       setErrorMessage('회원가입 중 오류가 발생했습니다.');
@@ -73,6 +82,70 @@ export default function SignUpPage() {
   const handleOAuthSignIn = (provider: string) => {
     signIn(provider, { callbackUrl: '/' });
   };
+
+  const PasswordRequirement = ({ met, text }: { met: boolean; text: string }) => (
+    <div className={`flex items-center space-x-2 text-xs ${met ? 'text-green-400' : 'text-dark-500'}`}>
+      {met ? (
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+      ) : (
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" strokeWidth={2} />
+        </svg>
+      )}
+      <span>{text}</span>
+    </div>
+  );
+
+  // Show verification success message
+  if (showVerificationMessage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md text-center"
+        >
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+            <div className="w-20 h-20 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-white mb-4">이메일을 확인해주세요!</h1>
+            <p className="text-dark-300 mb-6">
+              <span className="text-primary-400 font-medium">{email}</span>으로<br />
+              인증 이메일을 발송했습니다.
+            </p>
+            <p className="text-dark-400 text-sm mb-8">
+              이메일의 인증 링크를 클릭하여 회원가입을 완료해주세요.<br />
+              이메일이 오지 않았다면 스팸함을 확인해주세요.
+            </p>
+            <div className="space-y-3">
+              <Link
+                href="/auth/signin"
+                className="btn-primary w-full block text-center"
+              >
+                로그인 페이지로 이동
+              </Link>
+              <button
+                onClick={() => {
+                  setShowVerificationMessage(false);
+                  setEmail('');
+                  setPassword('');
+                  setConfirmPassword('');
+                }}
+                className="text-dark-400 hover:text-dark-300 text-sm"
+              >
+                다른 이메일로 가입하기
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -140,9 +213,13 @@ export default function SignUpPage() {
         {/* Registration Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {errorMessage && (
-            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm"
+            >
               {errorMessage}
-            </div>
+            </motion.div>
           )}
 
           <div>
@@ -184,10 +261,15 @@ export default function SignUpPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="input"
-              placeholder="최소 8자 이상"
+              placeholder="비밀번호"
               required
-              minLength={8}
             />
+            <div className="mt-2 grid grid-cols-2 gap-1">
+              <PasswordRequirement met={passwordStrength.length} text="8자 이상" />
+              <PasswordRequirement met={passwordStrength.uppercase} text="대문자 포함" />
+              <PasswordRequirement met={passwordStrength.lowercase} text="소문자 포함" />
+              <PasswordRequirement met={passwordStrength.number} text="숫자 포함" />
+            </div>
           </div>
 
           <div>
@@ -202,10 +284,17 @@ export default function SignUpPage() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="input"
+              className={`input ${
+                confirmPassword && password !== confirmPassword
+                  ? 'border-red-500 focus:ring-red-500'
+                  : ''
+              }`}
               placeholder="비밀번호 다시 입력"
               required
             />
+            {confirmPassword && password !== confirmPassword && (
+              <p className="text-red-400 text-xs mt-1">비밀번호가 일치하지 않습니다.</p>
+            )}
           </div>
 
           <button

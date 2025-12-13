@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,12 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../../App';
 import { formatMoney } from '@adventure/shared';
 
@@ -21,9 +23,51 @@ type Props = {
 
 export default function IntroScreen({ navigation }: Props) {
   const [playerName, setPlayerName] = useState('');
+  const [hasSavedGame, setHasSavedGame] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
+
+  useEffect(() => {
+    checkSavedGame();
+    loadUserName();
+  }, []);
+
+  const checkSavedGame = async () => {
+    try {
+      const save = await AsyncStorage.getItem('adventure-save');
+      setHasSavedGame(!!save);
+    } catch (error) {
+      console.error('Failed to check saved game:', error);
+    }
+  };
+
+  const loadUserName = async () => {
+    try {
+      const user = await AsyncStorage.getItem('user');
+      if (user) {
+        const parsed = JSON.parse(user);
+        setUserName(parsed.name || null);
+      }
+    } catch (error) {
+      console.error('Failed to load user name:', error);
+    }
+  };
 
   const handleStart = () => {
-    navigation.navigate('Game', { playerName: playerName || '신입 마케터' });
+    navigation.navigate('Game', { playerName: playerName || userName || '신입 마케터' });
+  };
+
+  const handleLoadGame = async () => {
+    try {
+      const save = await AsyncStorage.getItem('adventure-save');
+      if (save) {
+        const parsedSave = JSON.parse(save);
+        navigation.navigate('Game', {
+          playerName: parsedSave.player?.name || '마케터',
+        });
+      }
+    } catch (error) {
+      Alert.alert('오류', '저장된 게임을 불러올 수 없습니다.');
+    }
   };
 
   return (
@@ -32,6 +76,22 @@ export default function IntroScreen({ navigation }: Props) {
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
+        {/* Top Bar */}
+        <View style={styles.topBar}>
+          <TouchableOpacity
+            style={styles.topButton}
+            onPress={() => navigation.navigate('Profile')}
+          >
+            <Text style={styles.topButtonText}>👤</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.topButton}
+            onPress={() => navigation.navigate('Pricing')}
+          >
+            <Text style={styles.topButtonText}>⭐ PRO</Text>
+          </TouchableOpacity>
+        </View>
+
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
@@ -81,16 +141,27 @@ export default function IntroScreen({ navigation }: Props) {
             />
 
             {/* Start Button */}
-            <TouchableOpacity onPress={handleStart} activeOpacity={0.8}>
+            <TouchableOpacity onPress={handleStart} activeOpacity={0.8} style={styles.buttonWrapper}>
               <LinearGradient
                 colors={['#4ade80', '#22d3ee']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.button}
               >
-                <Text style={styles.buttonText}>게임 시작 →</Text>
+                <Text style={styles.buttonText}>새 게임 시작 →</Text>
               </LinearGradient>
             </TouchableOpacity>
+
+            {/* Load Game Button */}
+            {hasSavedGame && (
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={handleLoadGame}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.secondaryButtonText}>저장된 게임 불러오기</Text>
+              </TouchableOpacity>
+            )}
 
             {/* Features */}
             <View style={styles.featuresGrid}>
@@ -136,6 +207,19 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  topButton: {
+    padding: 8,
+  },
+  topButtonText: {
+    color: '#94a3b8',
+    fontSize: 16,
   },
   keyboardView: {
     flex: 1,
@@ -201,6 +285,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 16,
   },
+  buttonWrapper: {
+    width: '100%',
+  },
   button: {
     width: '100%',
     paddingVertical: 16,
@@ -212,6 +299,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#0f172a',
+  },
+  secondaryButton: {
+    width: '100%',
+    marginTop: 12,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    color: '#94a3b8',
   },
   featuresGrid: {
     flexDirection: 'row',

@@ -3,6 +3,8 @@ export * from './channels';
 export * from './events';
 export * from './achievements';
 export * from './subscriptions';
+export * from './skills';
+export * from './tutorial';
 
 // Game balance constants
 export const GAME_CONFIG = {

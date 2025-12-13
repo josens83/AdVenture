@@ -97,14 +97,44 @@ export const useGameStore = create<GameStore>()(
         });
       },
 
-      loadGame: (save: GameSave) => {
-        const engine = new GameEngine(undefined, save);
+      loadGame: (save: GameSave | Record<string, unknown>) => {
+        // Handle both GameSave format and API response format
+        const normalizedSave: GameSave = {
+          id: (save.id as string) || '',
+          playerId: (save.playerId as string) || '',
+          player: (save.player as Player) || {
+            id: '',
+            name: (save.playerName as string) || 'Player',
+            reputation: (save.playerReputation as number) || 50,
+            money: parseInt(String(save.playerMoney || '5000000')),
+            level: (save.playerLevel as number) || 1,
+            experience: (save.playerExperience as number) || 0,
+            completedProjects: (save.completedProjects as number) || 0,
+            totalEarnings: parseInt(String(save.totalEarnings || '0')),
+            achievements: [],
+            teamMembers: (save.teamMembers as never[]) || [],
+            unlockedChannels: (save.unlockedChannels as never[]) || ['seo', 'sns', 'ads', 'content'],
+            subscription: 'free',
+            createdAt: new Date(),
+            lastPlayedAt: new Date(),
+          },
+          currentState: ((save.currentState || save.gameState) as GameState) || 'clientSelect',
+          currentClient: (save.currentClient as Client) || undefined,
+          currentStrategy: (save.currentStrategy as MarketingStrategy) || undefined,
+          currentDay: (save.currentDay as number) || 1,
+          executionProgress: (save.executionProgress as number) || 0,
+          executionResults: (save.executionResults as ExecutionResult[]) || [],
+          savedAt: new Date(String(save.savedAt || save.updatedAt || Date.now())),
+          version: (save.version as string) || '1.0.0',
+        };
+
+        const engine = new GameEngine(undefined, normalizedSave);
         set({
           engine,
-          gameState: save.currentState,
-          player: save.player,
-          currentClient: save.currentClient || null,
-          currentStrategy: save.currentStrategy || {
+          gameState: normalizedSave.currentState,
+          player: engine.getPlayer(),
+          currentClient: normalizedSave.currentClient || null,
+          currentStrategy: normalizedSave.currentStrategy || {
             seo: 0,
             sns: 0,
             ads: 0,
@@ -112,8 +142,8 @@ export const useGameStore = create<GameStore>()(
             email: 0,
             influencer: 0,
           },
-          currentDay: save.currentDay,
-          executionProgress: save.executionProgress,
+          currentDay: normalizedSave.currentDay,
+          executionProgress: normalizedSave.executionProgress,
         });
       },
 

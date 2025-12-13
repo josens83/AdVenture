@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -11,16 +11,43 @@ export default function SignInPage() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/';
   const error = searchParams.get('error');
+  const verified = searchParams.get('verified');
+  const reset = searchParams.get('reset');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(error || '');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  useEffect(() => {
+    if (error) {
+      switch (error) {
+        case 'CredentialsSignin':
+          setErrorMessage('이메일 또는 비밀번호가 올바르지 않습니다.');
+          break;
+        case 'EmailNotVerified':
+          setErrorMessage('이메일 인증이 필요합니다. 이메일을 확인해주세요.');
+          break;
+        default:
+          setErrorMessage('로그인 중 오류가 발생했습니다.');
+      }
+    }
+
+    if (verified) {
+      setSuccessMessage('이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.');
+    }
+
+    if (reset) {
+      setSuccessMessage('비밀번호가 변경되었습니다. 새 비밀번호로 로그인해주세요.');
+    }
+  }, [error, verified, reset]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage('');
+    setSuccessMessage('');
 
     try {
       const result = await signIn('credentials', {
@@ -30,7 +57,11 @@ export default function SignInPage() {
       });
 
       if (result?.error) {
-        setErrorMessage(result.error);
+        if (result.error === 'EmailNotVerified') {
+          setErrorMessage('이메일 인증이 필요합니다. 이메일을 확인해주세요.');
+        } else {
+          setErrorMessage('이메일 또는 비밀번호가 올바르지 않습니다.');
+        }
       } else {
         router.push(callbackUrl);
         router.refresh();
@@ -63,6 +94,17 @@ export default function SignInPage() {
           </h1>
           <p className="text-dark-400 mt-2">마케터 생존기에 오신 것을 환영합니다</p>
         </div>
+
+        {/* Success Message */}
+        {successMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-xl text-sm mb-6"
+          >
+            {successMessage}
+          </motion.div>
+        )}
 
         {/* OAuth Buttons */}
         <div className="space-y-3 mb-6">
@@ -112,9 +154,21 @@ export default function SignInPage() {
         {/* Email/Password Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {errorMessage && (
-            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm"
+            >
               {errorMessage}
-            </div>
+              {errorMessage.includes('이메일 인증') && (
+                <Link
+                  href={`/api/auth/resend-verification?email=${encodeURIComponent(email)}`}
+                  className="block mt-2 text-primary-400 hover:underline"
+                >
+                  인증 이메일 다시 받기
+                </Link>
+              )}
+            </motion.div>
           )}
 
           <div>
@@ -133,9 +187,17 @@ export default function SignInPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-2">
-              비밀번호
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label htmlFor="password" className="block text-sm font-medium">
+                비밀번호
+              </label>
+              <Link
+                href="/auth/forgot-password"
+                className="text-sm text-primary-400 hover:underline"
+              >
+                비밀번호를 잊으셨나요?
+              </Link>
+            </div>
             <input
               id="password"
               type="password"

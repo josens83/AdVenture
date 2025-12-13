@@ -1,0 +1,105 @@
+{
+  "name": "마케터 생존기 - Marketing Simulator",
+  "short_name": "마케터 생존기",
+  "description": "실제 마케팅을 배우는 시뮬레이션 게임. 클라이언트를 수주하고, 전략을 세우고, 성과를 만들어내세요!",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "ko-KR",
+  "categories": ["games", "education", "business"],
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/game-1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "게임 메인 화면"
+    },
+    {
+      "src": "/screenshots/game-2.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "전략 설정 화면"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "게임 시작",
+      "short_name": "시작",
+      "description": "새 게임 시작하기",
+      "url": "/game",
+      "icons": [{ "src": "/icons/game-icon.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "리더보드",
+      "short_name": "순위",
+      "description": "전체 순위 보기",
+      "url": "/leaderboard",
+      "icons": [{ "src": "/icons/leaderboard-icon.png", "sizes": "96x96" }]
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.marketersurvival.app",
+      "id": "com.marketersurvival.app"
+    },
+    {
+      "platform": "itunes",
+      "url": "https://apps.apple.com/app/marketer-survival/id123456789"
+    }
+  ],
+  "prefer_related_applications": false
+}

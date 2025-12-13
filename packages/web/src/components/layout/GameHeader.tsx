@@ -6,6 +6,8 @@ interface GameHeaderProps {
   player: Player;
   currentDay: number;
   onSave?: () => void;
+  onLoad?: () => void;
+  onSkills?: () => void;
   onShowSubscription?: () => void;
 }
 
@@ -13,6 +15,8 @@ export default function GameHeader({
   player,
   currentDay,
   onSave,
+  onLoad,
+  onSkills,
   onShowSubscription,
 }: GameHeaderProps) {
   return (
@@ -52,6 +56,15 @@ export default function GameHeader({
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            {onSkills && (
+              <button
+                onClick={onSkills}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors skills-button"
+                title="스킬 트리"
+              >
+                ⚡
+              </button>
+            )}
             {onSave && (
               <button
                 onClick={onSave}
@@ -59,6 +72,15 @@ export default function GameHeader({
                 title="게임 저장"
               >
                 💾
+              </button>
+            )}
+            {onLoad && (
+              <button
+                onClick={onLoad}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                title="게임 불러오기"
+              >
+                📂
               </button>
             )}
             {onShowSubscription && (

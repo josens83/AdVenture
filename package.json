@@ -16,7 +16,12 @@
     "build:shared": "npm run build --workspace=packages/shared",
     "build:all": "npm run build:shared && npm run build:web && npm run build:api",
     "lint": "npm run lint --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "lint:fix": "npm run lint:fix --workspaces --if-present",
+    "type-check": "npm run type-check --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:coverage": "npm run test:coverage --workspaces --if-present",
+    "test:ci": "npm run test:ci --workspaces --if-present",
+    "prepare": "husky install || true"
   },
   "keywords": [
     "marketing",
