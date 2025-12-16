@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import '@/styles/globals.css';
 import SessionProvider from '@/components/providers/SessionProvider';
 import AnalyticsProvider from '@/components/providers/AnalyticsProvider';
+import { ServiceWorkerProvider } from '@/components/providers/ServiceWorkerProvider';
 import CookieConsent from '@/components/common/CookieConsent';
 import { WebsiteJsonLd, GameJsonLd, OrganizationJsonLd } from '@/components/seo/JsonLd';
 
@@ -122,13 +123,15 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <SessionProvider>
-          <Suspense fallback={null}>
-            <AnalyticsProvider>
-              <div id="app-root">{children}</div>
-              <div id="modal-root" />
-              <CookieConsent />
-            </AnalyticsProvider>
-          </Suspense>
+          <ServiceWorkerProvider>
+            <Suspense fallback={null}>
+              <AnalyticsProvider>
+                <div id="app-root">{children}</div>
+                <div id="modal-root" />
+                <CookieConsent />
+              </AnalyticsProvider>
+            </Suspense>
+          </ServiceWorkerProvider>
         </SessionProvider>
       </body>
     </html>
