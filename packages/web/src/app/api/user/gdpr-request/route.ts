@@ -239,7 +239,7 @@ export async function GET() {
             scheduledDate: (deletionRequest.eventData as { scheduledDeletionDate?: string })?.scheduledDeletionDate,
           }
         : null,
-      correctionRequests: correctionRequests.map((r) => ({
+      correctionRequests: correctionRequests.map((r: typeof correctionRequests[number]) => ({
         requestedAt: r.createdAt,
         status: (r.eventData as { status?: string })?.status || 'pending',
       })),

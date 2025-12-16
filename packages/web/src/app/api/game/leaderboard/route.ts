@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Format response
-    const formattedEntries = entries.map((entry, index) => ({
+    const formattedEntries = entries.map((entry: typeof entries[number], index: number) => ({
       rank: offset + index + 1,
       userId: entry.user.id,
       playerName: entry.user.name || 'Anonymous',

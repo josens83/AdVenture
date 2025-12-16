@@ -33,11 +33,11 @@ export async function GET(request: NextRequest) {
     const playerLevel = latestSave?.playerLevel || 1;
 
     // Get available skills for this player
-    const learnedSkillIds = userSkills.map((s) => s.skillId);
+    const learnedSkillIds = userSkills.map((s: typeof userSkills[number]) => s.skillId);
     const availableSkills = getAvailableSkills(playerLevel, learnedSkillIds);
 
     // Calculate total effects
-    const skillsForCalc = userSkills.map((s) => ({
+    const skillsForCalc = userSkills.map((s: typeof userSkills[number]) => ({
       skillId: s.skillId,
       level: s.level,
     }));
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      skills: userSkills.map((skill) => ({
+      skills: userSkills.map((skill: typeof userSkills[number]) => ({
         id: skill.skillId,
         level: skill.level,
         experience: skill.experience,
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
 
     // Check prerequisites
     if (skill.prerequisiteSkills) {
-      const learnedSkillIds = userSkills.map((s) => s.skillId);
+      const learnedSkillIds = userSkills.map((s: typeof userSkills[number]) => s.skillId);
       const hasAllPrereqs = skill.prerequisiteSkills.every((prereq) =>
         learnedSkillIds.includes(prereq)
       );
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find existing skill or create new
-    const existingSkill = userSkills.find((s) => s.skillId === skillId);
+    const existingSkill = userSkills.find((s: typeof userSkills[number]) => s.skillId === skillId);
 
     if (existingSkill) {
       // Add experience and check for level up

@@ -187,7 +187,7 @@ export interface TeamMember {
   role: TeamRole;
   level: number;
   salary: number;
-  skills: Skill[];
+  skills: TeamSkill[];
   avatar?: string;
 }
 
@@ -201,8 +201,8 @@ export type TeamRole =
   | 'designer'
   | 'account_manager';
 
-// 스킬
-export interface Skill {
+// 팀원 스킬 (팀원용 간단한 스킬)
+export interface TeamSkill {
   name: string;
   level: number;
   channel?: MarketingChannel;

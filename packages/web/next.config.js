@@ -3,10 +3,24 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@adventure/shared'],
   images: {
-    domains: ['localhost', 'adventure-game.com'],
-  },
-  experimental: {
-    serverActions: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'localhost',
+      },
+      {
+        protocol: 'https',
+        hostname: 'adventure-game.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+      },
+    ],
   },
 };
 

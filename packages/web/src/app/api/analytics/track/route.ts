@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      dailyStats: dailyStats.map((stat) => ({
+      dailyStats: dailyStats.map((stat: typeof dailyStats[number]) => ({
         ...stat,
         revenue: stat.revenue.toString(),
       })),

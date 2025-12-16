@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
-import { SubscriptionTier } from '@prisma/client';
 import { sendSubscriptionConfirmEmail } from '@/lib/email';
+
+// Define SubscriptionTier type locally to avoid dependency on @prisma/client
+type SubscriptionTier = 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',

@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
       select: { subscription: true },
     });
 
-    const maxSlots = GAME_CONFIG.SAVE_SLOTS[user?.subscription || 'FREE'];
+    const subscriptionKey = (user?.subscription || 'FREE').toLowerCase() as keyof typeof GAME_CONFIG.SAVE_SLOTS;
+    const maxSlots = GAME_CONFIG.SAVE_SLOTS[subscriptionKey] ?? GAME_CONFIG.SAVE_SLOTS.free;
     if (maxSlots !== -1 && slotNumber > maxSlots) {
       return NextResponse.json(
         { error: `Upgrade to save to slot ${slotNumber}` },
@@ -167,7 +168,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      saves: saves.map((save) => ({
+      saves: saves.map((save: typeof saves[number]) => ({
         ...save,
         playerMoney: save.playerMoney.toString(),
       })),

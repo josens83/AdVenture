@@ -7,12 +7,14 @@ declare module 'next-auth' {
       id: string;
       subscription: string;
       subscriptionEnd: Date | null;
+      emailVerified: Date | null;
     } & DefaultSession['user'];
   }
 
   interface User extends DefaultUser {
     subscription?: string;
     subscriptionEnd?: Date | null;
+    emailVerified?: Date | null;
   }
 }
 
@@ -21,5 +23,6 @@ declare module 'next-auth/jwt' {
     id: string;
     subscription?: string;
     subscriptionEnd?: Date | null;
+    emailVerified?: Date | null;
   }
 }

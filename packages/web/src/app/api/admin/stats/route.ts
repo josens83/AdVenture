@@ -92,16 +92,16 @@ export async function GET(request: NextRequest) {
         verified: verifiedUsers,
       },
       subscriptions: subscriptionCounts.reduce(
-        (acc, item) => ({
+        (acc: Record<string, number>, item: { subscription: string; _count: number }) => ({
           ...acc,
           [item.subscription]: item._count,
         }),
-        {}
+        {} as Record<string, number>
       ),
       revenue: {
         total: payments._sum.amount || 0,
       },
-      recentPayments: recentPayments.map((p) => ({
+      recentPayments: recentPayments.map((p: typeof recentPayments[number]) => ({
         id: p.id,
         amount: p.amount,
         currency: p.currency,
@@ -113,17 +113,17 @@ export async function GET(request: NextRequest) {
         totalSaves: totalGameSaves,
         totalAchievements: totalAchievements,
       },
-      topPlayers: topPlayers.map((p) => ({
+      topPlayers: topPlayers.map((p: typeof topPlayers[number]) => ({
         name: p.user.name || p.user.email,
         level: p.highestLevel,
         earnings: p.totalEarnings.toString(),
         projects: p.totalProjects,
       })),
-      events: eventCounts.map((e) => ({
+      events: eventCounts.map((e: { eventType: string; _count: number }) => ({
         type: e.eventType,
         count: e._count,
       })),
-      dailyStats: dailyStats.map((d) => ({
+      dailyStats: dailyStats.map((d: typeof dailyStats[number]) => ({
         date: d.date,
         activeUsers: d.activeUsers,
         newUsers: d.newUsers,

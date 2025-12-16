@@ -18,7 +18,7 @@ import { getChannelById, CHANNELS } from '../constants/channels';
 import { checkAchievements } from '../constants/achievements';
 
 export class GameEngine {
-  private player: Player;
+  private player!: Player;
   private currentClient: Client | null = null;
   private currentStrategy: MarketingStrategy | null = null;
   private currentDay: number = 1;

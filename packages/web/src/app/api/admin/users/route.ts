@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      users: users.map((u) => ({
+      users: users.map((u: typeof users[number]) => ({
         ...u,
         gameSaves: u._count.gameSaves,
         achievements: u._count.achievements,

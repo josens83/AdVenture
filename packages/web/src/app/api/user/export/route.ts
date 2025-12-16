@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
         ...user,
         totalEarnings: leaderboardEntry?.totalEarnings?.toString() || '0',
       },
-      gameSaves: gameSaves.map((save) => ({
+      gameSaves: gameSaves.map((save: typeof gameSaves[number]) => ({
         ...save,
         playerMoney: save.playerMoney.toString(),
         totalEarnings: save.totalEarnings.toString(),

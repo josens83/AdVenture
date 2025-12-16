@@ -14,6 +14,32 @@ import {
   Achievement,
 } from '@adventure/shared';
 
+// API response format for saved games (different from GameSave)
+interface ApiGameSave {
+  id?: string;
+  playerId?: string;
+  player?: Player;
+  playerName?: string;
+  playerLevel?: number;
+  playerExperience?: number;
+  playerMoney?: string | number;
+  playerReputation?: number;
+  completedProjects?: number;
+  totalEarnings?: string | number;
+  teamMembers?: unknown[];
+  unlockedChannels?: string[];
+  currentState?: GameState;
+  gameState?: GameState | string;
+  currentClient?: Client;
+  currentStrategy?: MarketingStrategy;
+  currentDay?: number;
+  executionProgress?: number;
+  executionResults?: ExecutionResult[];
+  savedAt?: string | Date;
+  updatedAt?: string | Date;
+  version?: string;
+}
+
 interface GameStore {
   // Engine instance
   engine: GameEngine | null;
@@ -35,7 +61,7 @@ interface GameStore {
 
   // Actions
   initGame: (playerName: string) => void;
-  loadGame: (save: GameSave) => void;
+  loadGame: (save: GameSave | ApiGameSave) => void;
   selectClient: (client: Client) => boolean;
   updateStrategy: (channel: keyof MarketingStrategy, value: number) => void;
   startExecution: () => boolean;
@@ -97,35 +123,36 @@ export const useGameStore = create<GameStore>()(
         });
       },
 
-      loadGame: (save: GameSave | Record<string, unknown>) => {
+      loadGame: (save: GameSave | ApiGameSave) => {
         // Handle both GameSave format and API response format
+        const apiSave = save as ApiGameSave;
         const normalizedSave: GameSave = {
-          id: (save.id as string) || '',
-          playerId: (save.playerId as string) || '',
-          player: (save.player as Player) || {
+          id: apiSave.id || '',
+          playerId: apiSave.playerId || '',
+          player: apiSave.player || {
             id: '',
-            name: (save.playerName as string) || 'Player',
-            reputation: (save.playerReputation as number) || 50,
-            money: parseInt(String(save.playerMoney || '5000000')),
-            level: (save.playerLevel as number) || 1,
-            experience: (save.playerExperience as number) || 0,
-            completedProjects: (save.completedProjects as number) || 0,
-            totalEarnings: parseInt(String(save.totalEarnings || '0')),
+            name: apiSave.playerName || 'Player',
+            reputation: apiSave.playerReputation || 50,
+            money: parseInt(String(apiSave.playerMoney || '5000000')),
+            level: apiSave.playerLevel || 1,
+            experience: apiSave.playerExperience || 0,
+            completedProjects: apiSave.completedProjects || 0,
+            totalEarnings: parseInt(String(apiSave.totalEarnings || '0')),
             achievements: [],
-            teamMembers: (save.teamMembers as never[]) || [],
-            unlockedChannels: (save.unlockedChannels as never[]) || ['seo', 'sns', 'ads', 'content'],
+            teamMembers: (apiSave.teamMembers as never[]) || [],
+            unlockedChannels: (apiSave.unlockedChannels as never[]) || ['seo', 'sns', 'ads', 'content'],
             subscription: 'free',
             createdAt: new Date(),
             lastPlayedAt: new Date(),
           },
-          currentState: ((save.currentState || save.gameState) as GameState) || 'clientSelect',
-          currentClient: (save.currentClient as Client) || undefined,
-          currentStrategy: (save.currentStrategy as MarketingStrategy) || undefined,
-          currentDay: (save.currentDay as number) || 1,
-          executionProgress: (save.executionProgress as number) || 0,
-          executionResults: (save.executionResults as ExecutionResult[]) || [],
-          savedAt: new Date(String(save.savedAt || save.updatedAt || Date.now())),
-          version: (save.version as string) || '1.0.0',
+          currentState: (apiSave.currentState || apiSave.gameState as GameState) || 'clientSelect',
+          currentClient: apiSave.currentClient || undefined,
+          currentStrategy: apiSave.currentStrategy || undefined,
+          currentDay: apiSave.currentDay || 1,
+          executionProgress: apiSave.executionProgress || 0,
+          executionResults: apiSave.executionResults || [],
+          savedAt: new Date(String(apiSave.savedAt || apiSave.updatedAt || Date.now())),
+          version: apiSave.version || '1.0.0',
         };
 
         const engine = new GameEngine(undefined, normalizedSave);
