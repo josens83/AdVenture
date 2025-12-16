@@ -14,17 +14,26 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.adventure.marketer"
+      "bundleIdentifier": "com.adventure.marketer",
+      "infoPlist": {
+        "NSCameraUsageDescription": "프로필 사진 촬영을 위해 카메라 접근이 필요합니다.",
+        "NSPhotoLibraryUsageDescription": "프로필 사진 선택을 위해 사진 라이브러리 접근이 필요합니다."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a1a2e"
       },
-      "package": "com.adventure.marketer"
+      "package": "com.adventure.marketer",
+      "permissions": [
+        "INTERNET",
+        "VIBRATE"
+      ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
     "plugins": [
       [
@@ -32,12 +41,23 @@
         {
           "fonts": []
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
+    "updates": {
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/YOUR_PROJECT_ID"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
     "extra": {
       "eas": {
-        "projectId": "your-project-id"
-      }
-    }
+        "projectId": "YOUR_PROJECT_ID"
+      },
+      "apiUrl": "https://marketer-survival.com/api"
+    },
+    "owner": "your-expo-username"
   }
 }
